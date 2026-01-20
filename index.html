@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hexa Sort - The Most Satisfying Puzzle Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #452b3f;
+            --bg-darker: #2b1b28;
+            --text-main: #f5eeb0;
+            --text-muted: #e0d3c8;
+            --primary-btn: #609c4f;
+            --primary-btn-shadow: #2c5e3b;
+            --accent-yellow: #fabf61;
+            --accent-orange: #e08d51;
+            --accent-red: #f05b5b;
+            --accent-cyan: #78c2d6;
+            --accent-blue: #5479b0;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Fredoka', sans-serif;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* --- Animations --- */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* --- Navigation --- */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-yellow);
+            text-decoration: none;
+            letter-spacing: 1px;
+        }
+
+        .nav-cta {
+            background-color: var(--primary-btn);
+            color: var(--text-main);
+            padding: 10px 25px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            box-shadow: 0 4px 0 var(--primary-btn-shadow);
+            transition: transform 0.1s;
+        }
+
+        .nav-cta:hover { transform: translateY(-2px); }
+        .nav-cta:active { transform: translateY(2px); box-shadow: none; }
+
+        /* --- Hero Section --- */
+        .hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 60px 20px 100px;
+            position: relative;
+            background: radial-gradient(circle at center, #56546e 0%, var(--bg-dark) 70%);
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            max-width: 800px;
+        }
+
+        .hero h1 span {
+            color: var(--accent-yellow);
+            display: block;
+            font-size: 4.5rem;
+            text-shadow: 4px 4px 0 var(--accent-orange);
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+            max-width: 600px;
+        }
+
+        .big-play-btn {
+            background-color: var(--primary-btn);
+            color: var(--text-main);
+            font-size: 2rem;
+            font-weight: 700;
+            text-decoration: none;
+            padding: 25px 80px;
+            border-radius: 60px;
+            box-shadow: 0 10px 0 var(--primary-btn-shadow), 0 20px 40px rgba(0,0,0,0.4);
+            transition: all 0.2s ease;
+            animation: pulse 2s infinite ease-in-out;
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .big-play-btn:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 14px 0 var(--primary-btn-shadow), 0 25px 50px rgba(0,0,0,0.5);
+            background-color: #6eb35a;
+        }
+
+        .big-play-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 var(--primary-btn-shadow);
+            animation: none;
+        }
+
+        /* --- Decorative Hexes --- */
+        .hex-bg {
+            position: absolute;
+            width: 80px;
+            height: 92px;
+            background-color: rgba(255,255,255,0.05);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            z-index: -1;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        /* --- Features Section --- */
+        .features {
+            background-color: var(--bg-darker);
+            padding: 80px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 60px;
+            color: var(--accent-cyan);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 40px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            border-color: var(--accent-yellow);
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .card h3 {
+            color: var(--accent-yellow);
+            margin-top: 0;
+            font-size: 1.5rem;
+        }
+
+        .card p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        /* --- Social Proof --- */
+        .reviews {
+            padding: 80px 20px;
+            text-align: center;
+        }
+
+        .stars {
+            color: var(--accent-yellow);
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .review-text {
+            font-size: 1.8rem;
+            font-style: italic;
+            max-width: 700px;
+            margin: 0 auto 30px;
+            color: var(--text-main);
+        }
+
+        .user {
+            color: var(--accent-cyan);
+            font-weight: 600;
+            display: block;
+            margin-top: 10px;
+        }
+
+        /* --- Footer --- */
+        footer {
+            background-color: var(--bg-darker);
+            padding: 40px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        footer a {
+            color: var(--accent-cyan);
+            text-decoration: none;
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .hero h1 span { font-size: 3.5rem; }
+            .big-play-btn { font-size: 1.5rem; padding: 20px 40px; width: 100%; justify-content: center; box-sizing: border-box; }
+            nav { padding: 15px 20px; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="#" class="logo">HEXASORT</a>
+        <a href="app.html" class="nav-cta">Play Now</a>
+    </nav>
+
+    <header class="hero">
+        <!-- Floating shapes for visual interest -->
+        <div class="hex-bg" style="top: 10%; left: 5%; background: var(--accent-red); animation-delay: 0s;"></div>
+        <div class="hex-bg" style="top: 20%; right: 10%; background: var(--accent-blue); animation-delay: 2s;"></div>
+        <div class="hex-bg" style="bottom: 10%; left: 15%; background: var(--accent-yellow); animation-delay: 4s;"></div>
+
+        <h1>
+            Order from Chaos.
+            <span>Stack. Merge. Chill.</span>
+        </h1>
+        <p>
+            Escape into a colorful world of hexagonal sorting. 
+            No ads. No timers. Just pure, satisfying gameplay designed to relax your mind.
+        </p>
+        
+        <a href="app.html" class="big-play-btn">
+            <span>▶</span> PLAY NOW
+        </a>
+        
+        <div style="margin-top: 20px; font-size: 0.9rem; opacity: 0.7;">
+            Instant Play • No Download Required
+        </div>
+    </header>
+
+    <section class="features">
+        <div class="container">
+            <h2 class="section-title">Why You'll Love It</h2>
+            
+            <div class="grid">
+                <div class="card">
+                    <span class="card-icon">🧠</span>
+                    <h3>Brain Training</h3>
+                    <p>Easy to learn, hard to master. Keep your mind sharp with procedurally generated puzzles that adapt to your skill.</p>
+                </div>
+                
+                <div class="card">
+                    <span class="card-icon">✨</span>
+                    <h3>Oddly Satisfying</h3>
+                    <p>Experience the ASMR-like joy of snapping tiles into place and watching them merge. Visual and audio perfection.</p>
+                </div>
+                
+                <div class="card">
+                    <span class="card-icon">♾️</span>
+                    <h3>Infinite Levels</h3>
+                    <p>The fun never stops. Progress from simple sorting to complex multi-layer challenges. How far can you get?</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="reviews">
+        <div class="stars">★★★★★</div>
+        <div class="review-text">
+            "I intended to play for 5 minutes and suddenly it was 2 hours later. The most relaxing game I've played in years."
+        </div>
+        <span class="user">— Alex M., Beta Tester</span>
+
+        <div style="margin-top: 50px;">
+            <div class="stars">★★★★★</div>
+            <div class="review-text">
+                "The colors are gorgeous and the sound design is so satisfying. 10/10 would stack again."
+            </div>
+            <span class="user">— Sarah K.</span>
+        </div>
+    </section>
+
+    <section style="text-align: center; padding: 60px 20px; background: linear-gradient(to bottom, var(--bg-dark), var(--bg-darker));">
+        <h2 style="font-size: 2.5rem; margin-bottom: 30px; color: var(--text-main);">Ready to Sort?</h2>
+        <a href="app.html" class="big-play-btn">
+            Start Playing Free
+        </a>
+    </section>
+
+    <footer>
+        <p>© 2024 Hexa Sort. Crafted with pure CSS & JS.</p>
+        <p><a href="#">Privacy Policy</a> • <a href="#">Terms of Service</a></p>
+    </footer>
+
+</body>
+</html>
+
+
