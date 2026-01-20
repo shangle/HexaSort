@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hexa Stack Sort - Fast Progression</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #452b3f; /* Dark Purple Background */
+            font-family: 'Fredoka', sans-serif;
+            touch-action: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            z-index: 10;
+        }
+
+        .top-bar {
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+        }
+
+        .level-info {
+            color: #f5eeb0; /* Cream */
+            font-size: 24px;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .progress-container {
+            width: 100%;
+            max-width: 400px;
+            height: 24px;
+            background: rgba(44, 94, 59, 0.4); /* Dark Green tint */
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid rgba(245, 238, 176, 0.3);
+            position: relative;
+        }
+
+        #progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #fabf61, #e08d51); /* Orange Gradient */
+            transition: width 0.3s ease-out;
+            box-shadow: 0 0 10px #fabf61;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #f5eeb0;
+            font-size: 14px;
+            text-shadow: 0 1px 2px black;
+        }
+
+        #game-canvas {
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            background: #2b1b28; /* Slightly darker than body for board contrast */
+            border-radius: 8px;
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(69, 43, 63, 0.95);
+            z-index: 100;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #f5eeb0;
+            animation: fadeIn 0.3s ease-out;
+            pointer-events: auto;
+        }
+
+        .modal h1 {
+            font-size: 48px;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            text-align: center;
+            color: #fabf61;
+        }
+
+        .modal p {
+            font-size: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            max-width: 80%;
+            line-height: 1.5;
+            color: #e0d3c8;
+        }
+
+        button.action-btn {
+            background: #609c4f;
+            border: none;
+            padding: 15px 40px;
+            font-size: 24px;
+            color: #f5eeb0;
+            border-radius: 50px;
+            font-family: 'Fredoka', sans-serif;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #2c5e3b;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        button.action-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #2c5e3b;
+        }
+
+        button.restart-btn {
+            background: #f05b5b;
+            box-shadow: 0 6px 0 #8f325f;
+        }
+
+        button.restart-btn:active {
+            box-shadow: 0 2px 0 #8f325f;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div class="top-bar">
+            <div class="level-info">
+                <span>Level <span id="level-display">1</span></span>
+                <span>Score: <span id="score-display">0</span></span>
+            </div>
+            <div class="progress-container" id="meter-target">
+                <div id="progress-fill"></div>
+                <div class="progress-text"><span id="progress-text">0</span>%</div>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="modal">
+        <h1>No Moves!</h1>
+        <p>The board is full and you have no moves left.</p>
+        <button class="action-btn restart-btn" onclick="restartLevel()">Try Level Again</button>
+    </div>
+
+    <!-- Level Complete Modal -->
+    <div id="level-complete-modal" class="modal">
+        <h1>Level Complete!</h1>
+        <p>Excellent stacking!</p>
+        <button class="action-btn" onclick="nextLevel()">Next Level</button>
+    </div>
+
+    <!-- Start Modal -->
+    <div id="start-modal" class="modal" style="display: flex;">
+        <h1>Hexa Stack</h1>
+        <p>Drag stacks to the board.<br>Match colors to merge neighbors.<br>Stacks of 10 clear to fill the meter.</p>
+        <button class="action-btn" onclick="startGame()">Play</button>
+    </div>
+
+    <script>
+        /**
+         * AUDIO SYSTEM (Synthesized)
+         */
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        const SOUNDS = {
+            POP: 'pop',
+            MOVE: 'move',
+            MERGE: 'merge',
+            CLEAR: 'clear',
+            LEVEL_UP: 'levelup',
+            FAIL: 'fail'
+        };
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            switch (type) {
+                case SOUNDS.POP:
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+                    gainNode.gain.setValueAtTime(0.3, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                    break;
+                case SOUNDS.MOVE:
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.linearRampToValueAtTime(400, now + 0.15);
+                    gainNode.gain.setValueAtTime(0.2, now);
+                    gainNode.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                    break;
+                case SOUNDS.MERGE:
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+                    gainNode.gain.setValueAtTime(0.2, now);
+                    gainNode.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                    break;
+                case SOUNDS.CLEAR:
+                    // Arpeggio
+                    [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g);
+                        g.connect(audioCtx.destination);
+                        o.type = 'sine';
+                        o.frequency.value = freq;
+                        const t = now + (i * 0.05);
+                        g.gain.setValueAtTime(0.1, t);
+                        g.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+                        o.start(t);
+                        o.stop(t + 0.3);
+                    });
+                    break;
+            }
+        }
+
+        /**
+         * GAME CONSTANTS & CONFIG
+         */
+        const HEX_RADIUS = 32;
+        const GRID_RADIUS = 3; 
+        const TILE_HEIGHT = 6;
+        const MAX_STACK_HEIGHT = 10;
+        
+        // NEW COLOR PALETTE
+        // Excluded background colors (#452b3f, #2b1b28) from tiles to ensure visibility
+        const PALETTE = [
+            '#f5eeb0', // Cream
+            '#fabf61', // Orange/Yellow
+            '#e08d51', // Orange
+            '#8a5865', // Mauve
+            '#2c5e3b', // Dark Green
+            '#609c4f', // Green
+            '#c6cc54', // Lime
+            '#78c2d6', // Cyan
+            '#5479b0', // Blue
+            '#839fa6', // Grey Blue
+            '#f05b5b', // Red
+            '#eb6c98'  // Pink
+        ];
+
+        /**
+         * GLOBAL STATE
+         */
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        let level = 1;
+        let score = 0;
+        let levelProgress = 0;
+        let levelTarget = 50; 
+        let activeColors = []; 
+
+        let grid = {}; // { "q,r": [colors...] }
+        let inventory = [null, null, null];
+        
+        // Interaction State
+        let isDragging = false;
+        let dragItemIndex = -1;
+        let dragPosition = { x: 0, y: 0 };
+        let dragOffset = { x: 0, y: 0 };
+        let highlightHex = null; // New: stores {q, r} of valid hover
+        
+        // Animation State
+        let animations = []; // Visual movers
+        let particles = []; // Visual effects (clears)
+        let isProcessing = false; // Locks input during merges
+
+        let inventoryY, inventoryX;
+        let meterRect = { x: 0, y: 0, w: 0, h: 0 };
+
+        /**
+         * INITIALIZATION
+         */
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            
+            inventoryY = height - height * 0.15;
+            const slotWidth = width / 3;
+            inventoryX = [slotWidth * 0.5, slotWidth * 1.5, slotWidth * 2.5];
+            
+            const meter = document.getElementById('meter-target').getBoundingClientRect();
+            meterRect = {
+                x: meter.left + meter.width / 2,
+                y: meter.top + meter.height / 2
+            };
+        }
+        window.addEventListener('resize', () => { resize(); draw(); });
+        resize();
+
+        function startGame() {
+            document.getElementById('start-modal').style.display = 'none';
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            level = 1;
+            score = 0;
+            initLevel(level);
+        }
+
+        function restartLevel() {
+            document.getElementById('game-over-modal').style.display = 'none';
+            initLevel(level);
+        }
+
+        function nextLevel() {
+            document.getElementById('level-complete-modal').style.display = 'none';
+            level++;
+            initLevel(level);
+        }
+
+        function initLevel(lvl) {
+            grid = {};
+            inventory = [null, null, null];
+            isProcessing = false;
+            levelProgress = 0;
+            animations = [];
+            particles = [];
+            
+            // Level Scaling Math
+            const numColors = Math.min(PALETTE.length, 4 + Math.floor((lvl - 1) / 3)); 
+            activeColors = PALETTE.slice(0, numColors);
+            
+            // --- FAST PROGRESSION LOGIC ---
+            // Level 1: Target 20 (2 clears). Level 2: 35. Level 3: 50.
+            // This ensures levels 1-5 fly by very quickly.
+            levelTarget = 20 + ((lvl - 1) * 15);
+            
+            // --- HIGH DENSITY START ---
+            // Board starts 75% full, scaling up to 90%
+            const fillRatio = Math.min(0.9, 0.75 + (lvl * 0.002)); 
+            
+            const totalHexes = 1 + 3 * GRID_RADIUS * (GRID_RADIUS + 1);
+            const tilesToSpawn = Math.floor(totalHexes * fillRatio);
+            
+            // --- STACK SIZES ---
+            // Increased initial stack height. 
+            // Previous: 1-3. New: 1-6 for Level 1.
+            // This makes stacks closer to 10 (clearing), allowing for immediate wins.
+            const maxStackSize = Math.min(9, 6 + Math.floor(lvl / 10)); 
+            const mixChance = Math.min(0.8, 0.1 + (lvl * 0.02)); 
+
+            updateUI();
+            generateGridMap();
+            populateBoard(tilesToSpawn, maxStackSize, mixChance);
+            spawnInventory();
+            draw();
+        }
+
+        function generateGridMap() {
+            for (let q = -GRID_RADIUS; q <= GRID_RADIUS; q++) {
+                let r1 = Math.max(-GRID_RADIUS, -q - GRID_RADIUS);
+                let r2 = Math.min(GRID_RADIUS, -q + GRID_RADIUS);
+                for (let r = r1; r <= r2; r++) {
+                    grid[`${q},${r}`] = null;
+                }
+            }
+        }
+
+        function populateBoard(count, maxSize, mixChance) {
+            const keys = Object.keys(grid);
+            for (let i = keys.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [keys[i], keys[j]] = [keys[j], keys[i]];
+            }
+
+            let placed = 0;
+            for (let i = 0; i < keys.length && placed < count; i++) {
+                grid[keys[i]] = createRandomStack(maxSize, mixChance);
+                placed++;
+            }
+        }
+
+        function createRandomStack(maxSize, mixChance) {
+            const stack = [];
+            const h = Math.floor(Math.random() * maxSize) + 1;
+            let currentColor = activeColors[Math.floor(Math.random() * activeColors.length)];
+            
+            for (let i = 0; i < h; i++) {
+                if (i > 0 && Math.random() < mixChance) {
+                    currentColor = activeColors[Math.floor(Math.random() * activeColors.length)];
+                }
+                stack.push(currentColor);
+            }
+            return stack;
+        }
+
+        function spawnInventory() {
+            for (let i = 0; i < 3; i++) {
+                if (inventory[i] === null) {
+                    const mix = Math.min(0.5, level * 0.01); 
+                    inventory[i] = createRandomStack(5, mix);
+                }
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('level-display').innerText = level;
+            document.getElementById('score-display').innerText = score;
+            const pct = Math.min(100, Math.floor((levelProgress / levelTarget) * 100));
+            document.getElementById('progress-fill').style.width = `${pct}%`;
+            document.getElementById('progress-text').innerText = pct;
+        }
+
+        /**
+         * CORE LOGIC - RECURSIVE MERGE
+         */
+
+        async function handlePlacement(q, r, placedStack) {
+            isProcessing = true;
+            grid[`${q},${r}`] = [...placedStack];
+            highlightHex = null; // Clear highlight
+            playSound(SOUNDS.POP);
+            
+            await settleBoard([`${q},${r}`]);
+
+            isProcessing = false;
+            
+            if (levelProgress >= levelTarget) {
+                setTimeout(() => {
+                    document.getElementById('level-complete-modal').style.display = 'flex';
+                    playSound(SOUNDS.LEVEL_UP);
+                }, 500);
+            } else {
+                checkRefill();
+                checkGameOver();
+            }
+        }
+
+        async function settleBoard(activeHexes) {
+            let candidates = [...activeHexes];
+            
+            while (candidates.length > 0) {
+                let nextPassCandidates = new Set();
+                let moveAnimations = [];
+                let mergeOccurred = false;
+
+                for (const key of candidates) {
+                    const [q, r] = key.split(',').map(Number);
+                    const moves = getIncomingMoves(q, r);
+                    
+                    if (moves.length > 0) {
+                        mergeOccurred = true;
+                        moves.forEach(move => {
+                            grid[key].push(...move.tiles);
+                            moveAnimations.push(animateMove(move.tiles, move.from, {q,r}));
+                            if (grid[`${move.from.q},${move.from.r}`]) {
+                                nextPassCandidates.add(`${move.from.q},${move.from.r}`);
+                            }
+                        });
+                        nextPassCandidates.add(key);
+                    }
+                }
+
+                if (moveAnimations.length > 0) {
+                    playSound(SOUNDS.MERGE);
+                    await Promise.all(moveAnimations);
+                }
+
+                let clearOccurred = false;
+                let clearAnimations = [];
+                const currentCheckSet = Array.from(nextPassCandidates);
+                nextPassCandidates.clear();
+
+                for (const key of currentCheckSet) {
+                    const [q, r] = key.split(',').map(Number);
+                    const stack = grid[key];
+                    if (!stack) continue;
+
+                    const topColor = stack[stack.length - 1];
+                    let count = 0;
+                    for (let i = stack.length - 1; i >= 0; i--) {
+                        if (stack[i] === topColor) count++;
+                        else break;
+                    }
+
+                    if (count >= MAX_STACK_HEIGHT) {
+                        clearOccurred = true;
+                        const removed = stack.splice(stack.length - count, count);
+                        if (stack.length === 0) grid[key] = null;
+                        
+                        score += count * 10;
+                        levelProgress += count;
+                        updateUI();
+
+                        clearAnimations.push(animateClear(removed, {q,r}, topColor));
+                        
+                        if (grid[key]) nextPassCandidates.add(key);
+                    }
+                }
+
+                if (clearOccurred) {
+                    playSound(SOUNDS.CLEAR);
+                    await Promise.all(clearAnimations);
+                }
+
+                if (!mergeOccurred && !clearOccurred) break;
+                candidates = Array.from(nextPassCandidates);
+            }
+        }
+
+        function getIncomingMoves(q, r) {
+            const stack = grid[`${q},${r}`];
+            if (!stack || stack.length === 0) return [];
+
+            const targetColor = stack[stack.length - 1];
+            const neighbors = getNeighbors(q, r);
+            let moves = [];
+
+            neighbors.forEach(n => {
+                const nKey = `${n.q},${n.r}`;
+                const nStack = grid[nKey];
+                
+                if (nStack) {
+                    const nTop = nStack[nStack.length - 1];
+                    if (nTop === targetColor) {
+                        let matchCount = 0;
+                        for (let i = nStack.length - 1; i >= 0; i--) {
+                            if (nStack[i] === targetColor) matchCount++;
+                            else break;
+                        }
+                        
+                        if (matchCount > 0) {
+                            const movingTiles = nStack.splice(nStack.length - matchCount, matchCount);
+                            if (nStack.length === 0) grid[nKey] = null;
+                            moves.push({ from: n, tiles: movingTiles });
+                        }
+                    }
+                }
+            });
+            return moves;
+        }
+
+        function checkRefill() {
+            if (inventory.every(item => item === null)) spawnInventory();
+        }
+
+        function checkGameOver() {
+            const emptyKeys = Object.keys(grid).filter(k => grid[k] === null);
+            const hasInventory = inventory.some(i => i !== null);
+            
+            if (hasInventory && emptyKeys.length === 0) {
+                playSound(SOUNDS.FAIL);
+                document.querySelector('#game-over-modal p').innerText = `Level ${level} - Final Score: ${score}`;
+                document.getElementById('game-over-modal').style.display = 'flex';
+            }
+        }
+
+        /**
+         * MATH & GEOMETRY
+         */
+        function hexToPixel(q, r) {
+            const x = (width / 2) + (HEX_RADIUS * (3/2 * q));
+            const y = (height / 2 - height * 0.1) + (HEX_RADIUS * (Math.sqrt(3)/2 * q + Math.sqrt(3) * r));
+            return { x, y };
+        }
+
+        function pixelToHex(x, y) {
+            const centerX = width / 2;
+            const centerY = height / 2 - height * 0.1;
+            const q = (2/3 * (x - centerX)) / HEX_RADIUS;
+            const r = (-1/3 * (x - centerX) + Math.sqrt(3)/3 * (y - centerY)) / HEX_RADIUS;
+            return hexRound(q, r);
+        }
+
+        function hexRound(q, r) {
+            let s = -q - r;
+            let rq = Math.round(q);
+            let rr = Math.round(r);
+            let rs = Math.round(s);
+            let q_diff = Math.abs(rq - q);
+            let r_diff = Math.abs(rr - r);
+            let s_diff = Math.abs(rs - s);
+            if (q_diff > r_diff && q_diff > s_diff) rq = -rr - rs;
+            else if (r_diff > s_diff) rr = -rq - rs;
+            return { q: rq, r: rr };
+        }
+
+        function getNeighbors(q, r) {
+            return [
+                {q: q+1, r: r}, {q: q+1, r: r-1}, {q: q, r: r-1},
+                {q: q-1, r: r}, {q: q-1, r: r+1}, {q: q, r: r+1}
+            ].map(h => ({q:h.q, r:h.r}));
+        }
+
+        /**
+         * RENDERING
+         */
+        function drawHex(x, y, color, scale = 1, stroke = true, strokeColor = '#2b1b28', lineWidth = 2) {
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle_deg = 60 * i;
+                const angle_rad = Math.PI / 180 * angle_deg;
+                const px = x + (HEX_RADIUS * scale) * Math.cos(angle_rad);
+                const py = y + (HEX_RADIUS * scale) * Math.sin(angle_rad);
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            if (color) {
+                ctx.fillStyle = color;
+                ctx.fill();
+            }
+            if (stroke) {
+                ctx.strokeStyle = strokeColor;
+                ctx.lineWidth = lineWidth;
+                ctx.stroke();
+            }
+        }
+
+        function drawStack(x, y, stack, scale = 1, opacity = 1) {
+            if (!stack || stack.length === 0) return;
+            
+            // Shadow base
+            ctx.globalAlpha = 0.3 * opacity;
+            drawHex(x, y + 8, '#000', scale, false);
+            
+            ctx.globalAlpha = opacity;
+            stack.forEach((color, i) => {
+                const yOffset = -i * (TILE_HEIGHT * scale);
+                drawHex(x, y + yOffset, color, scale, true);
+                
+                // Highlight side for 3D effect
+                ctx.fillStyle = 'rgba(255,255,255,0.15)';
+                ctx.fill();
+            });
+
+            // Count number
+            const topY = y - (stack.length - 1) * (TILE_HEIGHT * scale);
+            ctx.fillStyle = '#f5eeb0'; // Cream text
+            ctx.font = `bold ${14 * scale}px Fredoka`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 4;
+            ctx.fillText(stack.length, x, topY);
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+
+            // 1. Draw Grid Slots (The Floor) - Always Draw First
+            for (let key in grid) {
+                const [q, r] = key.split(',').map(Number);
+                const pos = hexToPixel(q, r);
+                drawHex(pos.x, pos.y, '#3b2536', 1, false); // Slot floor
+                drawHex(pos.x, pos.y, '#2b1b28', 0.9, false); // Inner shadow
+            }
+
+            // 2. Draw Highlight (Hover Effect)
+            if (highlightHex) {
+                const pos = hexToPixel(highlightHex.q, highlightHex.r);
+                ctx.save();
+                ctx.shadowColor = '#f5eeb0';
+                ctx.shadowBlur = 15;
+                drawHex(pos.x, pos.y, 'rgba(245, 238, 176, 0.2)', 1.0, true, '#f5eeb0', 3);
+                ctx.restore();
+            }
+
+            // 3. Draw All Stacks (Sorted by Y for correct occlusion)
+            let renderList = [];
+
+            // Add Static Stacks
+            for (let key in grid) {
+                const stack = grid[key];
+                if (stack) {
+                    const [q, r] = key.split(',').map(Number);
+                    const pos = hexToPixel(q, r);
+                    renderList.push({
+                        y: pos.y,
+                        draw: () => drawStack(pos.x, pos.y, stack)
+                    });
+                }
+            }
+
+            // Add Moving Animations
+            animations.forEach(anim => {
+                renderList.push({
+                    y: anim.current.y,
+                    draw: () => drawStack(anim.current.x, anim.current.y, anim.stack)
+                });
+            });
+
+            // SORT by Y (Painter's Algorithm)
+            renderList.sort((a, b) => a.y - b.y);
+
+            // Execute Draws
+            renderList.forEach(item => item.draw());
+
+
+            // 4. Draw Inventory
+            inventory.forEach((stack, i) => {
+                if (isDragging && dragItemIndex === i) return;
+                if (stack) {
+                    drawStack(inventoryX[i], inventoryY, stack, 0.85);
+                }
+            });
+
+            // 5. Draw Particles
+            ctx.globalCompositeOperation = 'lighter';
+            particles.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+            });
+            ctx.globalCompositeOperation = 'source-over';
+
+            // 6. Draw Dragged Item (Always on Top)
+            if (isDragging && dragItemIndex !== -1) {
+                const stack = inventory[dragItemIndex];
+                drawStack(dragPosition.x, dragPosition.y, stack, 1.1);
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        /**
+         * ANIMATION HELPERS
+         */
+        function lerp(a, b, t) { return a * (1-t) + b * t; }
+
+        function animateMove(stack, from, to) {
+            return new Promise(resolve => {
+                const startPos = hexToPixel(from.q, from.r);
+                const endPos = hexToPixel(to.q, to.r);
+                
+                const anim = {
+                    stack: stack,
+                    start: startPos,
+                    end: endPos,
+                    current: {...startPos},
+                    progress: 0,
+                    speed: 0.08,
+                    finished: false
+                };
+                animations.push(anim);
+
+                const loop = () => {
+                    anim.progress += anim.speed;
+                    anim.current.x = lerp(anim.start.x, anim.end.x, anim.progress);
+                    anim.current.y = lerp(anim.start.y, anim.end.y, anim.progress);
+                    
+                    if (anim.progress < 1) {
+                        requestAnimationFrame(loop);
+                    } else {
+                        anim.finished = true;
+                        animations = animations.filter(a => a !== anim);
+                        resolve();
+                    }
+                };
+                loop();
+            });
+        }
+
+        function animateClear(tiles, hex, color) {
+            return new Promise(resolve => {
+                const startPos = hexToPixel(hex.q, hex.r);
+                const count = tiles.length;
+                let finishedCount = 0;
+
+                for(let i=0; i<count; i++) {
+                    setTimeout(() => {
+                        const p = {
+                            x: startPos.x,
+                            y: startPos.y,
+                            size: 10,
+                            color: color,
+                            progress: 0
+                        };
+                        particles.push(p);
+
+                        const pLoop = () => {
+                            p.progress += 0.02;
+                            const t = p.progress;
+                            const tx = lerp(startPos.x, meterRect.x, t);
+                            const ty = lerp(startPos.y, meterRect.y, t);
+                            
+                            p.x = tx; 
+                            p.y = ty - Math.sin(t * Math.PI) * 100; 
+                            p.size = 10 * (1 - t); 
+
+                            if (t < 1) {
+                                requestAnimationFrame(pLoop);
+                            } else {
+                                particles = particles.filter(part => part !== p);
+                                finishedCount++;
+                                if(finishedCount === count) resolve();
+                            }
+                        };
+                        pLoop();
+                    }, i * 50);
+                }
+            });
+        }
+
+        /**
+         * INPUT HANDLING
+         */
+        function getPointerPos(e) {
+            const r = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - r.left, y: clientY - r.top };
+        }
+
+        function handleStart(e) {
+            if (isProcessing) return;
+            if (e.target.tagName === 'BUTTON') return;
+            
+            const pos = getPointerPos(e);
+            
+            for (let i = 0; i < 3; i++) {
+                if (inventory[i]) {
+                    const ix = inventoryX[i];
+                    const iy = inventoryY;
+                    const d = Math.sqrt((pos.x - ix)**2 + (pos.y - iy)**2);
+                    if (d < HEX_RADIUS * 2) {
+                        isDragging = true;
+                        dragItemIndex = i;
+                        playSound(SOUNDS.POP);
+                        dragOffset = { x: 0, y: -70 };
+                        dragPosition = { x: pos.x + dragOffset.x, y: pos.y + dragOffset.y };
+                        break;
+                    }
+                }
+            }
+        }
+
+        function handleMove(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            const pos = getPointerPos(e);
+            dragPosition = { x: pos.x + dragOffset.x, y: pos.y + dragOffset.y };
+            
+            // Calculate Highlight
+            const hex = pixelToHex(dragPosition.x, dragPosition.y);
+            const key = `${hex.q},${hex.r}`;
+            if (grid.hasOwnProperty(key) && grid[key] === null) {
+                highlightHex = { q: hex.q, r: hex.r };
+            } else {
+                highlightHex = null;
+            }
+        }
+
+        function handleEnd(e) {
+            if (!isDragging) return;
+            
+            if (highlightHex) {
+                const stack = inventory[dragItemIndex];
+                inventory[dragItemIndex] = null;
+                handlePlacement(highlightHex.q, highlightHex.r, stack);
+            }
+
+            isDragging = false;
+            dragItemIndex = -1;
+            highlightHex = null;
+        }
+
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleEnd);
+
+        canvas.addEventListener('touchstart', handleStart, {passive: false});
+        canvas.addEventListener('touchmove', handleMove, {passive: false});
+        window.addEventListener('touchend', handleEnd);
+
+    </script>
+</body>
+</html>
+
